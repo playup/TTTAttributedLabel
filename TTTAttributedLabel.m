@@ -703,7 +703,8 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     
     CGSize suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(self.framesetter, rangeToSize, NULL, constraints, NULL);
     
-    return CGSizeMake(ceilf(suggestedSize.width), ceilf(suggestedSize.height));
+    // LC - adding +1 to the height because it looks like CTFramesetter may have a rounding bug and the suggestedSize is sometimes 1px too small
+    return CGSizeMake(ceilf(suggestedSize.width), MIN(ceilf(suggestedSize.height) + 1, constraints.height));
 }
 
 #pragma mark - UIGestureRecognizer
