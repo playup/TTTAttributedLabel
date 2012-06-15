@@ -746,6 +746,8 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
                 [self.delegate attributedLabel:self didSelectLinkWithDate:result.date];
             }
             break;
+        default:
+            break;
     }
 }
 
