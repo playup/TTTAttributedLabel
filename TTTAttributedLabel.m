@@ -404,7 +404,7 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     CFArrayRef lines = CTFrameGetLines(frame);
     NSInteger numberOfLines = self.numberOfLines > 0 ? MIN(self.numberOfLines, CFArrayGetCount(lines)) : CFArrayGetCount(lines);
     BOOL truncateLastLine = (self.lineBreakMode == UILineBreakModeHeadTruncation || self.lineBreakMode == UILineBreakModeMiddleTruncation || self.lineBreakMode == UILineBreakModeTailTruncation);
-    
+	
     CGPoint lineOrigins[numberOfLines];
     CTFrameGetLineOrigins(frame, CFRangeMake(0, numberOfLines), lineOrigins);
     
@@ -600,13 +600,21 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     [self setNeedsDisplay];
 }
 
+// Fixes crash when loading from a UIStoryboard
+- (UIColor *)textColor {
+	UIColor *color = [super textColor];
+	if (!color) {
+		color = [UIColor blackColor];
+	}
+	
+	return color;
+}
+
 - (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines {
     if (!self.attributedText) {
         return [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
     }
-    
-    // *Note: we aren't taking numberOfLines into consideration here
-    
+        
     CGRect textRect = bounds;
     
     // Adjust the text to be in the center vertically, if the text size is smaller than bounds
@@ -614,9 +622,11 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     textSize = CGSizeMake(ceilf(textSize.width), ceilf(textSize.height)); // Fix for iOS 4, CTFramesetterSuggestFrameSizeWithConstraints sometimes returns fractional sizes
     
     if (textSize.height < textRect.size.height) {
+        CGFloat heightChange = (textRect.size.height - textSize.height);
         CGFloat yOffset = 0.0f;
         switch (self.verticalAlignment) {
             case TTTAttributedLabelVerticalAlignmentTop:
+                heightChange = 0.0f;
                 break;
             case TTTAttributedLabelVerticalAlignmentCenter:
                 yOffset = floorf((textRect.size.height - textSize.height) / 2.0f);
@@ -627,7 +637,7 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
         }
         
         textRect.origin.y += yOffset;
-        textRect.size.height = textSize.height;
+        textRect.size = CGSizeMake(textRect.size.width, textRect.size.height - heightChange + yOffset);
     }
     
     return textRect;
@@ -640,6 +650,7 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     }
     
     NSAttributedString *originalAttributedText = nil;
+    
     // Adjust the font size to fit width, if necessarry 
     if (self.adjustsFontSizeToFitWidth && self.numberOfLines > 0) {
         CGFloat textWidth = [self sizeThatFits:CGSizeZero].width;
