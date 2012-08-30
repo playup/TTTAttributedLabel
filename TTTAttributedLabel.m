@@ -361,7 +361,7 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     NSUInteger idx = NSNotFound;
 
     CGPoint lineOrigins[numberOfLines];
-    CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), lineOrigins);
+    CTFrameGetLineOrigins(frame, CFRangeMake(0, numberOfLines), lineOrigins);
 
     for (CFIndex lineIndex = 0; lineIndex < numberOfLines; lineIndex++) {
         CGPoint lineOrigin = lineOrigins[lineIndex];
