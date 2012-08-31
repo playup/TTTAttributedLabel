@@ -86,6 +86,12 @@ static inline NSDictionary * NSAttributedStringAttributesFromLabel(TTTAttributed
     CGFloat rightMargin = label.textInsets.right;
     CGFloat firstLineIndent = label.firstLineIndent + leftMargin;
 
+  CGFloat ascent = CTFontGetAscent(font);
+  CGFloat descent = CTFontGetDescent(font);
+  CGFloat lead = CTFontGetLeading(font);
+  CGFloat natural_height = ascent + descent + lead;
+  CGFloat adjusted_height = ceilf(natural_height * lineHeightMultiple);
+
     CTLineBreakMode lineBreakMode;
     if (label.numberOfLines != 1) {
         lineBreakMode = CTLineBreakModeFromUILineBreakMode(UILineBreakModeWordWrap);
@@ -94,11 +100,12 @@ static inline NSDictionary * NSAttributedStringAttributesFromLabel(TTTAttributed
         lineBreakMode = CTLineBreakModeFromUILineBreakMode(label.lineBreakMode);
     }
 	
-    CTParagraphStyleSetting paragraphStyles[9] = {
+    CTParagraphStyleSetting paragraphStyles[] = {
 		{.spec = kCTParagraphStyleSpecifierAlignment, .valueSize = sizeof(CTTextAlignment), .value = (const void *)&alignment},
 		{.spec = kCTParagraphStyleSpecifierLineBreakMode, .valueSize = sizeof(CTLineBreakMode), .value = (const void *)&lineBreakMode},
         {.spec = kCTParagraphStyleSpecifierLineSpacing, .valueSize = sizeof(CGFloat), .value = (const void *)&lineSpacing},
-        {.spec = kCTParagraphStyleSpecifierLineHeightMultiple, .valueSize = sizeof(CGFloat), .value = (const void *)&lineHeightMultiple},
+        {.spec = kCTParagraphStyleSpecifierMinimumLineHeight, .valueSize = sizeof(CGFloat), .value = (const void *)&adjusted_height},
+        {.spec = kCTParagraphStyleSpecifierMaximumLineHeight, .valueSize = sizeof(CGFloat), .value = (const void *)&adjusted_height},
         {.spec = kCTParagraphStyleSpecifierFirstLineHeadIndent, .valueSize = sizeof(CGFloat), .value = (const void *)&firstLineIndent},
         {.spec = kCTParagraphStyleSpecifierParagraphSpacingBefore, .valueSize = sizeof(CGFloat), .value = (const void *)&topMargin},
         {.spec = kCTParagraphStyleSpecifierParagraphSpacing, .valueSize = sizeof(CGFloat), .value = (const void *)&bottomMargin},
@@ -106,7 +113,7 @@ static inline NSDictionary * NSAttributedStringAttributesFromLabel(TTTAttributed
         {.spec = kCTParagraphStyleSpecifierTailIndent, .valueSize = sizeof(CGFloat), .value = (const void *)&rightMargin}
 	};
 
-    CTParagraphStyleRef paragraphStyle = CTParagraphStyleCreate(paragraphStyles, 9);
+    CTParagraphStyleRef paragraphStyle = CTParagraphStyleCreate(paragraphStyles, sizeof(paragraphStyles) / sizeof(paragraphStyles[0]));
 	[mutableAttributes setObject:(id)paragraphStyle forKey:(NSString *)kCTParagraphStyleAttributeName];
 	CFRelease(paragraphStyle);
     
@@ -737,9 +744,7 @@ static inline NSAttributedString * NSAttributedStringByScalingFontSize(NSAttribu
     }
     
     CGSize suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(self.framesetter, rangeToSize, NULL, constraints, NULL);
-    
-    // LC - adding +1 to the height because it looks like CTFramesetter may have a rounding bug and the suggestedSize is sometimes 1px too small
-    return CGSizeMake(ceilf(suggestedSize.width), MIN(ceilf(suggestedSize.height) + 1, constraints.height));
+  return CGSizeMake(ceilf(suggestedSize.width), ceilf(suggestedSize.height));
 }
 
 #pragma mark - UIGestureRecognizer
